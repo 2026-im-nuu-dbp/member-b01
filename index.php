@@ -1,10 +1,8 @@
 <?php
-// Read and display discussion topics
 
 header('Content-Type: text/html; charset=utf-8');
 require 'db_config.php';
 
-// Fetch all news topics with reply count
 try {
     $stmt = $pdo->query('
         SELECT n.id, n.title, n.author, n.created_at,

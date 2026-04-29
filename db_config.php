@@ -1,5 +1,4 @@
 <?php
-// Database configuration
 
 $host = 'localhost';
 $db = 'test_db';
