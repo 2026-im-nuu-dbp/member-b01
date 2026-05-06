@@ -1,6 +1,10 @@
 <?php
 // Display discussion content and replies
-
+session_start();
+if (!isset($_SESSION['user'])) {
+    header("Location: login.php");
+    exit;
+}
 header('Content-Type: text/html; charset=utf-8');
 require 'db_config.php';
 
@@ -210,10 +214,14 @@ try {
             <h2>發表回應</h2>
             <form action="post_reply.php" method="post">
                 <input type="hidden" name="news_id" value="<?= $newsId ?>">
-
                 <div class="form-group">
-                    <label for="author">作者：</label>
-                    <input type="text" id="author" name="author" maxlength="100" required>
+                    作者：
+                    <img src="avatar/<?= escape($_SESSION['user']['avatar']) ?>" 
+                        width="30" 
+                        style="vertical-align:middle; border-radius:50%;">
+                    <strong>
+                        <?= escape($_SESSION['user']['nickname']) ?>
+                    </strong>
                 </div>
 
                 <div class="form-group">
