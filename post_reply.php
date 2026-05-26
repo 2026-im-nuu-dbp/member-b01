@@ -1,48 +1,53 @@
 <?php
-// Insert reply into database
-
-header('Content-Type: text/html; charset=utf-8');
+session_start();
 require 'db_config.php';
+
+if (!isset($_SESSION['user'])) {
+    header("Location: login.php");
+    exit;
+}
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     die('Invalid request method.');
 }
 
 $newsId = isset($_POST['news_id']) ? intval($_POST['news_id']) : 0;
-$author = isset($_POST['author']) ? trim($_POST['author']) : '';
 $content = isset($_POST['content']) ? trim($_POST['content']) : '';
 
-// Validation
 if ($newsId <= 0) {
     die('無效的討論 ID。<br><a href="index.php">返回</a>');
 }
 
-if (empty($author) || empty($content)) {
-    die('所有欄位都必須填寫。<br><a href="show_news.php?id=' . $newsId . '">返回</a>');
+if ($content === '') {
+    die('內容不可空白');
 }
 
-// Check if news exists
-try {
-    $stmt = $pdo->prepare('SELECT id FROM news WHERE id = ?');
-    $stmt->execute([$newsId]);
-    if (!$stmt->fetch()) {
-        die('找不到此討論。<br><a href="index.php">返回首頁</a>');
-    }
-} catch (PDOException $e) {
-    die('驗證失敗: ' . $e->getMessage());
-}
+$user = $_SESSION['user'];
+$author = $user['nickname'];
+$user_id = $user['id'];
 
-// Limit input length
-$author = substr($author, 0, 100);
 $content = substr($content, 0, 10000);
 
-try {
-    $stmt = $pdo->prepare('INSERT INTO replies (news_id, content, author) VALUES (?, ?, ?)');
-    $stmt->execute([$newsId, $content, $author]);
+// 檢查文章是否存在
+$stmt = $pdo->prepare("SELECT id FROM news WHERE id = ?");
+$stmt->execute([$newsId]);
 
-    // Redirect back to discussion page
-    header('Location: show_news.php?id=' . $newsId);
-    exit;
-} catch (PDOException $e) {
-    die('發表回應失敗: ' . $e->getMessage() . '<br><a href="show_news.php?id=' . $newsId . '">返回</a>');
+if (!$stmt->fetch()) {
+    die('找不到此討論。<br><a href="index.php">返回首頁</a>');
 }
+
+// 寫入回覆（會員版）
+$stmt = $pdo->prepare(
+    "INSERT INTO replies (news_id, content, author, user_id)
+     VALUES (?, ?, ?, ?)"
+);
+
+$stmt->execute([
+    $newsId,
+    $content,
+    $author,
+    $user_id
+]);
+
+header('Location: show_news.php?id=' . $newsId);
+exit;

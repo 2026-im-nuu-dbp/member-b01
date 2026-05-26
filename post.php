@@ -1,6 +1,10 @@
 <?php
 // Insert new discussion into database
-
+session_start();
+if (!isset($_SESSION['user'])) {
+    header("Location: login.php");
+    exit;
+}
 header('Content-Type: text/html; charset=utf-8');
 require 'db_config.php';
 
@@ -8,7 +12,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     die('Invalid request method.');
 }
 
-$author = isset($_POST['author']) ? trim($_POST['author']) : '';
+$user = $_SESSION['user'];
+$author = $user['nickname'];
+$user_id = $user['id'];
 $title = isset($_POST['title']) ? trim($_POST['title']) : '';
 $content = isset($_POST['content']) ? trim($_POST['content']) : '';
 
@@ -23,8 +29,17 @@ $title = substr($title, 0, 200);
 $content = substr($content, 0, 10000);
 
 try {
-    $stmt = $pdo->prepare('INSERT INTO news (title, content, author) VALUES (?, ?, ?)');
-    $stmt->execute([$title, $content, $author]);
+    $stmt = $pdo->prepare(
+    'INSERT INTO news (title, content, author, user_id)
+     VALUES (?, ?, ?, ?)'
+);
+
+$stmt->execute([
+    $title,
+    $content,
+    $author,
+    $user_id
+]);
 
     // Redirect to homepage
     header('Location: index.php');

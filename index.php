@@ -1,24 +1,31 @@
 <?php
+// Read and display discussion topics
 
 header('Content-Type: text/html; charset=utf-8');
 require 'db_config.php';
 
 try {
-    $stmt = $pdo->query('
-        SELECT n.id, n.title, n.author, n.created_at,
-               COUNT(r.id) as reply_count
-        FROM news n
-        LEFT JOIN replies r ON n.id = r.news_id
-        GROUP BY n.id, n.title, n.author, n.created_at
-        ORDER BY n.created_at DESC
-    ');
+    $stmt = $pdo->query("
+    SELECT n.id, n.title, n.created_at,
+           n.author,
+           n.user_id,
+           u.nickname,
+           u.avatar,
+           u.color,
+           COUNT(r.id) as reply_count
+    FROM news n
+    LEFT JOIN users u ON n.user_id = u.id
+    LEFT JOIN replies r ON n.id = r.news_id
+    GROUP BY n.id
+    ORDER BY n.created_at DESC
+");
     $news = $stmt->fetchAll();
 } catch (PDOException $e) {
     $error = '讀取討論失敗: ' . $e->getMessage();
     $news = [];
 }
 ?>
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="zh-Hant">
 <head>
     <meta charset="utf-8">
@@ -138,19 +145,26 @@ try {
 <body>
     <div class="container">
         <h1>📋 討論區</h1>
+        <div style="margin-bottom:15px;">
+            👤 歡迎，<?= escape($_SESSION['user']['nickname']) ?>
 
+            <?php if ($_SESSION['user']['role'] === 'admin'): ?>
+        |       <a href="admin.php" style="color:blue;">⚙ 管理員後台</a>
+            <?php endif; ?>
+    |           <a href="logout.php" style="color:red;">🚪 登出</a>
+            </div>
         <?php if (isset($error)): ?>
             <div class="error"><?= escape($error) ?></div>
         <?php endif; ?>
-
+            
         <div class="form-box">
             <h2>發表新討論</h2>
             <form action="post.php" method="post">
                 <div class="form-group">
-                    <label for="author">作者：</label>
-                    <input type="text" id="author" name="author" maxlength="100" required>
-                </div>
-
+                    作者：
+                    <img src="avatar/<?= escape($_SESSION['user']['avatar']) ?>" width="30" style="vertical-align:middle;">
+                    <?= escape($_SESSION['user']['nickname']) ?>
+                </div class="form-group">
                 <div class="form-group">
                     <label for="title">標題：</label>
                     <input type="text" id="title" name="title" maxlength="200" required>
@@ -174,7 +188,7 @@ try {
         <?php else: ?>
             <div class="news-list">
                 <?php foreach ($news as $item): ?>
-                    <div class="news-item">
+                    <div class="news-item" style="background: <?= escape($item['color'] ?? '#ffffff') ?>">
                         <div class="news-title">
                             <a href="show_news.php?id=<?= $item['id'] ?>">
                                 <?= escape($item['title']) ?>
@@ -186,8 +200,10 @@ try {
                             <?php endif; ?>
                         </div>
                         <div class="news-meta">
-                            由 <strong><?= escape($item['author']) ?></strong> 發表於
-                            <?= escape($item['created_at']) ?>
+                            由<img src="avatar/<?= escape($item['avatar'] ?? 'default.png') ?>" width="25">
+                            <strong>
+                                <?= escape($item['nickname'] ?? $item['author']) ?>
+                            </strong>
                         </div>
                     </div>
                 <?php endforeach; ?>
