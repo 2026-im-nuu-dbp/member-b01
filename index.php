@@ -1,6 +1,10 @@
 <?php
 // Read and display discussion topics
-
+session_start();
+if (!isset($_SESSION['user'])) {
+    header("Location: login.php");
+    exit;
+}
 header('Content-Type: text/html; charset=utf-8');
 require 'db_config.php';
 
